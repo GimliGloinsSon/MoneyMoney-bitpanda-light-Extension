@@ -110,7 +110,7 @@ function ListAccounts (knownAccounts)
     -- FIAT Wallets
     table.insert(accounts, 
       {
-        name = "FIAT",
+        name = "FIAT Wallets",
         owner = user,
         accountNumber = "FIAT Accounts",
         currency = walletCurrency,
@@ -122,7 +122,7 @@ function ListAccounts (knownAccounts)
     -- Crypto Wallets
     table.insert(accounts, 
       {
-        name = "Krypto",
+        name = "Krypto Wallets",
         owner = user,
         accountNumber = "Krypto Accounts",
         currency = walletCurrency,
@@ -134,7 +134,7 @@ function ListAccounts (knownAccounts)
     -- Indizes Wallets
     table.insert(accounts, 
       {
-        name = "Indizes",
+        name = "Index Wallets",
         owner = user,
         accountNumber = "Index Accounts",
         currency = walletCurrency,
@@ -146,7 +146,7 @@ function ListAccounts (knownAccounts)
     -- Commodity Wallets
     table.insert(accounts, 
       {
-        name = "Commodities",
+        name = "Commoditie Wallets",
         owner = user,
         accountNumber = "Metal Accounts",
         currency = walletCurrency,
