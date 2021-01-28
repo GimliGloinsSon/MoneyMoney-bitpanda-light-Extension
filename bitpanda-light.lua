@@ -273,9 +273,6 @@ function queryPrivate(method, params)
 end
 
 function queryPrice(symbol, currency)
-  --prices = connection:request("GET", "https://api.bitpanda.com/v1/ticker", nil, nil, nil)
-
-  --priceTable = JSON(prices):dictionary()
   return priceTable[symbol][currency]
 end
 
