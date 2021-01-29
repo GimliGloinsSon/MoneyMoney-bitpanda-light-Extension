@@ -34,7 +34,6 @@ WebBanking{version     = 1.00,
 local connection = Connection()
 local apiKey
 local walletCurrency = "EUR"
-local pageSize = 25
 local coinDict = {
   -- Krypto
   [1] = "Bitcoin",
@@ -94,6 +93,8 @@ local coinDict = {
   [42] = "Bitpanda Crypto Index 25",
 }
 local priceTable = {}
+local allAssetWallets = {}
+local allFiatWallets = {}
 
 function SupportsBank (protocol, bankCode)
     return protocol == ProtocolWebBanking and bankCode == "bitpanda-light"
@@ -104,6 +105,8 @@ function InitializeSession (protocol, bankCode, username, username2, password, u
     apiKey = username
     prices = connection:request("GET", "https://api.bitpanda.com/v1/ticker", nil, nil, nil)
     priceTable = JSON(prices):dictionary()
+    allAssetWallets = queryPrivate("asset-wallets")
+    allFiatWallets = queryPrivate("fiatwallets")
 end
 
 function ListAccounts (knownAccounts)
@@ -171,13 +174,13 @@ function RefreshAccount (account, since)
     -- transactions for Depot
     if account.portfolio then
       if account.subAccount == "cryptocoin" then 
-        getTrans = queryPrivate("asset-wallets").data.attributes.cryptocoin.attributes.wallets
+        getTrans = allAssetWallets.data.attributes.cryptocoin.attributes.wallets
       elseif account.subAccount == "index.index" then
-        getTrans = queryPrivate("asset-wallets").data.attributes.index.index.attributes.wallets
+        getTrans = allAssetWallets.data.attributes.index.index.attributes.wallets
       elseif account.subAccount == "commodity.metal" then
-        getTrans = queryPrivate("asset-wallets").data.attributes.commodity.metal.attributes.wallets
+        getTrans = allAssetWallets.data.attributes.commodity.metal.attributes.wallets
       elseif account.subAccount == "fiat" then
-        getTrans = queryPrivate("fiatwallets").data
+        getTrans = allFiatWallets.data
       else
         return
       end
