@@ -46,7 +46,7 @@ Installation
 Usage
 -----
 
-* For Username: API-Key from Bitpanda
+* For API-Key (Username in older version than 2.4.3 of MoneyMoney): API-Key from Bitpanda
 
 * At "Kontenauswahl" you can select your:
     * FIAT wallets
