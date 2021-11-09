@@ -302,7 +302,6 @@ function queryPrice(symbol, currency)
 end
 
 function queryStockPrice(symbol)
-  MM.printStatus("Symbol: " .. symbol)
   pricesStock = connection:request("GET", urlStock .. symbol .. "&apikey=" .. apiKeyStock, nil, nil, nil)
   priceTableStockUSD = JSON(pricesStock):dictionary()
   pricesStock = connection:request("GET", urlStock .. symbol .. ".DEX&apikey=" .. apiKeyStock, nil, nil, nil)
@@ -311,15 +310,13 @@ function queryStockPrice(symbol)
   priceTableStockGBP = JSON(pricesStock):dictionary()
 
   if priceTableStockEUR["Global Quote"]["05. price"] ~= nil then
-    price = priceTableStockEUR["Global Quote"]["05. price"]
+    price = tonumber(priceTableStockEUR["Global Quote"]["05. price"])
   elseif priceTableStockUSD["Global Quote"]["05. price"] ~= nil then
-    price = priceTableStockUSD["Global Quote"]["05. price"]
     rate = tonumber(queryPrice("BTC", "USD")) / tonumber(queryPrice("BTC", "EUR"))
-    price = tonumber(price) / tonumber(rate)
+    price = tonumber(priceTableStockUSD["Global Quote"]["05. price"]) / tonumber(rate)
   elseif priceTableStockGBP["Global Quote"]["05. price"] ~= nil then
-    price = priceTableStockGBP["Global Quote"]["05. price"]
     rate = tonumber(queryPrice("BTC", "GBP")) / tonumber(queryPrice("BTC", "EUR"))
-    price = tonumber(price) / tonumber(rate)
+    price = tonumber(priceTableStockGBP["Global Quote"]["05. price"]) / tonumber(rate)
   else
     price = 0
   end
