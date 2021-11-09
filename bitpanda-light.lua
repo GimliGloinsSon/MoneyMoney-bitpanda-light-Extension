@@ -26,7 +26,7 @@
 -- SOFTWARE.
 
 
-WebBanking{version     = 1.00,
+WebBanking{version     = 1.01,
            url         = "https://api.bitpanda.com/v1/",
            services    = {"bitpanda-light"},
            description = "Loads current Balances for FIATs, Krypto, Indizes and Commodities from bitpanda"}
@@ -154,14 +154,26 @@ function ListAccounts (knownAccounts)
       {
         name = "Commoditie Wallets",
         owner = user,
-        accountNumber = "Metal Accounts",
+        accountNumber = "Comm Accounts",
         currency = walletCurrency,
         portfolio = true,
         type = AccountTypePortfolio,
         subAccount = "commodity.metal"
       })
 
-    return accounts
+    -- Stock Wallets
+    table.insert(accounts, 
+      {
+        name = "Stock Wallets",
+        owner = user,
+        accountNumber = "Stock Accounts",
+        currency = walletCurrency,
+        portfolio = true,
+        type = AccountTypePortfolio,
+        subAccount = "security.stock"
+      })
+
+      return accounts
 end
 
 function RefreshAccount (account, since)
@@ -179,6 +191,8 @@ function RefreshAccount (account, since)
         getTrans = allAssetWallets.data.attributes.index.index.attributes.wallets
       elseif account.subAccount == "commodity.metal" then
         getTrans = allAssetWallets.data.attributes.commodity.metal.attributes.wallets
+      elseif account.subAccount == "security.stock" then
+        getTrans = allAssetWallets.data.attributes.security.stock.attributes.wallets
       elseif account.subAccount == "fiat" then
         getTrans = allFiatWallets.data
       else
@@ -210,7 +224,7 @@ function transactionForCryptTransaction(transaction, currency, type)
       symbol = transaction.attributes.fiat_symbol
       currAmount = currQuant
       currQuant = nil
-    elseif type == "index.index" then
+    elseif type == "index.index" or type == "security.stock" then
       symbol = transaction.attributes.cryptocoin_symbol
       currAmount = currQuant
       currQuant = nil
