@@ -26,10 +26,10 @@
 -- SOFTWARE.
 
 
-WebBanking{version     = 1.01,
+WebBanking{version     = 1.1,
            url         = "https://api.bitpanda.com/v1/",
            services    = {"bitpanda-light"},
-           description = "Loads current Balances for FIATs, Krypto, Indizes and Commodities from bitpanda"}
+           description = "Loads current Balances for FIATs, Krypto, Indizes, Stocks and Commodities from bitpanda"}
 
 local connection = Connection()
 local apiKey
@@ -82,6 +82,7 @@ local coinDict = {
   [60] = "Band Protocol",
   [61] = "REN",
   [63] = "UMA",
+  [143] = "Symbol",
   -- Metals
   [28] = "Gold",
   [29] = "Silver",
@@ -107,6 +108,8 @@ function InitializeSession (protocol, bankCode, username, username2, password, u
     priceTable = JSON(prices):dictionary()
     allAssetWallets = queryPrivate("asset-wallets")
     allFiatWallets = queryPrivate("fiatwallets")
+    apiKeyStock = "DWSYJP8RXE2O1K8S"
+    urlStock = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=" 
 end
 
 function ListAccounts (knownAccounts)
@@ -224,10 +227,15 @@ function transactionForCryptTransaction(transaction, currency, type)
       symbol = transaction.attributes.fiat_symbol
       currAmount = currQuant
       currQuant = nil
-    elseif type == "index.index" or type == "security.stock" then
+    elseif type == "index.index" then
       symbol = transaction.attributes.cryptocoin_symbol
       currAmount = currQuant
       currQuant = nil
+    elseif type == "security.stock" then  
+      symbol = transaction.attributes.cryptocoin_symbol
+      currPrice = tonumber(queryStockPrice(symbol))
+      currAmount = currPrice * currQuant
+      calcCurrency = nil
     else
       symbol = transaction.attributes.cryptocoin_symbol
       currPrice = tonumber(queryPrice(symbol, currency))
@@ -292,6 +300,32 @@ end
 function queryPrice(symbol, currency)
   return priceTable[symbol][currency]
 end
+
+function queryStockPrice(symbol)
+  MM.printStatus("Symbol: " .. symbol)
+  pricesStock = connection:request("GET", urlStock .. symbol .. "&apikey=" .. apiKeyStock, nil, nil, nil)
+  priceTableStockUSD = JSON(pricesStock):dictionary()
+  pricesStock = connection:request("GET", urlStock .. symbol .. ".DEX&apikey=" .. apiKeyStock, nil, nil, nil)
+  priceTableStockEUR = JSON(pricesStock):dictionary()
+  pricesStock = connection:request("GET", urlStock .. symbol .. ".LON&apikey=" .. apiKeyStock, nil, nil, nil)
+  priceTableStockGBP = JSON(pricesStock):dictionary()
+
+  if priceTableStockEUR["Global Quote"]["05. price"] ~= nil then
+    price = priceTableStockEUR["Global Quote"]["05. price"]
+  elseif priceTableStockUSD["Global Quote"]["05. price"] ~= nil then
+    price = priceTableStockUSD["Global Quote"]["05. price"]
+    rate = tonumber(queryPrice("BTC", "USD")) / tonumber(queryPrice("BTC", "EUR"))
+    price = tonumber(price) / tonumber(rate)
+  elseif priceTableStockGBP["Global Quote"]["05. price"] ~= nil then
+    price = priceTableStockGBP["Global Quote"]["05. price"]
+    rate = tonumber(queryPrice("BTC", "GBP")) / tonumber(queryPrice("BTC", "EUR"))
+    price = tonumber(price) / tonumber(rate)
+  else
+    price = 0
+  end
+  return price
+end
+
 
 function httpBuildQuery(params)
     local str = ''
