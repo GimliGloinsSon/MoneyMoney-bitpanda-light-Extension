@@ -82,7 +82,18 @@ local coinDict = {
   [60] = "Band Protocol",
   [61] = "REN",
   [63] = "UMA",
+  [66] = "Ocean Protocol",
+  [69] = "Aragon",
+  [129] = "1inch",
+  [131] = "The Graph",
+  [133] = "Terra",
+  [134] = "Polygon",
+  [138] = "Dedentraland",
+  [139] = "PancakeSwap",
+  [141] = "SushiSwap",
   [143] = "Symbol",
+  [151] = "Axie Infinity Shard",
+  [193] = "SHIBA INU",
   -- Metals
   [28] = "Gold",
   [29] = "Silver",
@@ -92,6 +103,11 @@ local coinDict = {
   [40] = "Bitpanda Crypto Index 5",
   [41] = "Bitpanda Crypto Index 10",
   [42] = "Bitpanda Crypto Index 25",
+  -- Stocks
+  [75] = "Apple",
+  [78] = "Microsoft",
+  [89] = "Allianz",
+  [106] = "Boeing",
 }
 local priceTable = {}
 local allAssetWallets = {}
@@ -302,25 +318,30 @@ function queryPrice(symbol, currency)
 end
 
 function queryStockPrice(symbol)
-  pricesStock = connection:request("GET", urlStock .. symbol .. "&apikey=" .. apiKeyStock, nil, nil, nil)
-  priceTableStockUSD = JSON(pricesStock):dictionary()
   pricesStock = connection:request("GET", urlStock .. symbol .. ".DEX&apikey=" .. apiKeyStock, nil, nil, nil)
   priceTableStockEUR = JSON(pricesStock):dictionary()
-  pricesStock = connection:request("GET", urlStock .. symbol .. ".LON&apikey=" .. apiKeyStock, nil, nil, nil)
-  priceTableStockGBP = JSON(pricesStock):dictionary()
-
   if priceTableStockEUR["Global Quote"]["05. price"] ~= nil then
     price = tonumber(priceTableStockEUR["Global Quote"]["05. price"])
-  elseif priceTableStockUSD["Global Quote"]["05. price"] ~= nil then
+    return price
+  end
+
+  pricesStock = connection:request("GET", urlStock .. symbol .. "&apikey=" .. apiKeyStock, nil, nil, nil)
+  priceTableStockUSD = JSON(pricesStock):dictionary()
+  if priceTableStockUSD["Global Quote"]["05. price"] ~= nil then
     rate = tonumber(queryPrice("BTC", "USD")) / tonumber(queryPrice("BTC", "EUR"))
     price = tonumber(priceTableStockUSD["Global Quote"]["05. price"]) / tonumber(rate)
-  elseif priceTableStockGBP["Global Quote"]["05. price"] ~= nil then
+    return price
+  end
+
+  pricesStock = connection:request("GET", urlStock .. symbol .. ".LON&apikey=" .. apiKeyStock, nil, nil, nil)
+  priceTableStockGBP = JSON(pricesStock):dictionary()
+  if priceTableStockGBP["Global Quote"]["05. price"] ~= nil then
     rate = tonumber(queryPrice("BTC", "GBP")) / tonumber(queryPrice("BTC", "EUR"))
     price = tonumber(priceTableStockGBP["Global Quote"]["05. price"]) / tonumber(rate)
-  else
-    price = 0
+    return price
   end
-  return price
+
+  return 0
 end
 
 
