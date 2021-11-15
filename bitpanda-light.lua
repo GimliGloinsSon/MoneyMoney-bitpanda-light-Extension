@@ -124,8 +124,10 @@ function InitializeSession (protocol, bankCode, username, username2, password, u
     priceTable = JSON(prices):dictionary()
     allAssetWallets = queryPrivate("asset-wallets")
     allFiatWallets = queryPrivate("fiatwallets")
-    apiKeyStock = "DWSYJP8RXE2O1K8S"
-    urlStock = "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=" 
+    urlStock = "https://api.bitpanda.com/v2/masterdata" 
+    stocks = connection:request("GET", urlStock, nil, nil, nil)
+    stockPriceTable = JSON(stocks):dictionary()
+    stockPrices = stockPriceTable.data.attributes.stocks
 end
 
 function ListAccounts (knownAccounts)
@@ -235,7 +237,8 @@ function transactionForCryptTransaction(transaction, currency, type)
     local currPrice = 0
     local currQuant = tonumber(transaction.attributes.balance) 
     local currAmount = 0 
-
+    local isinString = ""
+    local wpName = transaction.attributes.name
     local calcCurrency = currency
     
     if type == "fiat" then
@@ -249,7 +252,9 @@ function transactionForCryptTransaction(transaction, currency, type)
       currQuant = nil
     elseif type == "security.stock" then  
       symbol = transaction.attributes.cryptocoin_symbol
-      currPrice = tonumber(queryStockPrice(symbol))
+      currPrice = tonumber(queryStockMasterdata(symbol, "avg_price"))
+      isinString = queryStockMasterdata(symbol, "isin")
+      wpName = wpName .. " - " .. queryStockMasterdata(symbol, "name")
       currAmount = currPrice * currQuant
       calcCurrency = nil
     else
@@ -261,8 +266,9 @@ function transactionForCryptTransaction(transaction, currency, type)
 
     t = {
       --String name: Bezeichnung des Wertpapiers
-      name = transaction.attributes.name,
+      name = wpName,
       --String isin: ISIN
+      isin = isinString,
       --String securityNumber: WKN
       securityNumber = symbol,
       --String market: Börse
@@ -317,28 +323,11 @@ function queryPrice(symbol, currency)
   return priceTable[symbol][currency]
 end
 
-function queryStockPrice(symbol)
-  pricesStock = connection:request("GET", urlStock .. symbol .. ".DEX&apikey=" .. apiKeyStock, nil, nil, nil)
-  priceTableStockEUR = JSON(pricesStock):dictionary()
-  if priceTableStockEUR["Global Quote"]["05. price"] ~= nil then
-    price = tonumber(priceTableStockEUR["Global Quote"]["05. price"])
-    return price
-  end
-
-  pricesStock = connection:request("GET", urlStock .. symbol .. "&apikey=" .. apiKeyStock, nil, nil, nil)
-  priceTableStockUSD = JSON(pricesStock):dictionary()
-  if priceTableStockUSD["Global Quote"]["05. price"] ~= nil then
-    rate = tonumber(queryPrice("BTC", "USD")) / tonumber(queryPrice("BTC", "EUR"))
-    price = tonumber(priceTableStockUSD["Global Quote"]["05. price"]) / tonumber(rate)
-    return price
-  end
-
-  pricesStock = connection:request("GET", urlStock .. symbol .. ".LON&apikey=" .. apiKeyStock, nil, nil, nil)
-  priceTableStockGBP = JSON(pricesStock):dictionary()
-  if priceTableStockGBP["Global Quote"]["05. price"] ~= nil then
-    rate = tonumber(queryPrice("BTC", "GBP")) / tonumber(queryPrice("BTC", "EUR"))
-    price = tonumber(priceTableStockGBP["Global Quote"]["05. price"]) / tonumber(rate)
-    return price
+function queryStockMasterdata(symbol, field)
+  for key, value in pairs(stockPrices) do
+    if value.attributes.symbol == symbol then
+      return value.attributes[field]
+    end
   end
 
   return 0
