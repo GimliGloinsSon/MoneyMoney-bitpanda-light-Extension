@@ -26,10 +26,10 @@
 -- SOFTWARE.
 
 
-WebBanking{version     = 1.00,
+WebBanking{version     = 1.1,
            url         = "https://api.bitpanda.com/v1/",
            services    = {"bitpanda-light"},
-           description = "Loads current Balances for FIATs, Krypto, Indizes and Commodities from bitpanda"}
+           description = "Loads current Balances for FIATs, Krypto, Indizes, Stocks and Commodities from bitpanda"}
 
 local connection = Connection()
 local apiKey
@@ -82,6 +82,18 @@ local coinDict = {
   [60] = "Band Protocol",
   [61] = "REN",
   [63] = "UMA",
+  [66] = "Ocean Protocol",
+  [69] = "Aragon",
+  [129] = "1inch",
+  [131] = "The Graph",
+  [133] = "Terra",
+  [134] = "Polygon",
+  [138] = "Dedentraland",
+  [139] = "PancakeSwap",
+  [141] = "SushiSwap",
+  [143] = "Symbol",
+  [151] = "Axie Infinity Shard",
+  [193] = "SHIBA INU",
   -- Metals
   [28] = "Gold",
   [29] = "Silver",
@@ -91,6 +103,11 @@ local coinDict = {
   [40] = "Bitpanda Crypto Index 5",
   [41] = "Bitpanda Crypto Index 10",
   [42] = "Bitpanda Crypto Index 25",
+  -- Stocks
+  [75] = "Apple",
+  [78] = "Microsoft",
+  [89] = "Allianz",
+  [106] = "Boeing",
 }
 local priceTable = {}
 local allAssetWallets = {}
@@ -107,6 +124,10 @@ function InitializeSession (protocol, bankCode, username, username2, password, u
     priceTable = JSON(prices):dictionary()
     allAssetWallets = queryPrivate("asset-wallets")
     allFiatWallets = queryPrivate("fiatwallets")
+    urlStock = "https://api.bitpanda.com/v2/masterdata" 
+    stocks = connection:request("GET", urlStock, nil, nil, nil)
+    stockPriceTable = JSON(stocks):dictionary()
+    stockPrices = stockPriceTable.data.attributes.stocks
 end
 
 function ListAccounts (knownAccounts)
@@ -154,14 +175,26 @@ function ListAccounts (knownAccounts)
       {
         name = "Commoditie Wallets",
         owner = user,
-        accountNumber = "Metal Accounts",
+        accountNumber = "Comm Accounts",
         currency = walletCurrency,
         portfolio = true,
         type = AccountTypePortfolio,
         subAccount = "commodity.metal"
       })
 
-    return accounts
+    -- Stock Wallets
+    table.insert(accounts, 
+      {
+        name = "Stock Wallets",
+        owner = user,
+        accountNumber = "Stock Accounts",
+        currency = walletCurrency,
+        portfolio = true,
+        type = AccountTypePortfolio,
+        subAccount = "security.stock"
+      })
+
+      return accounts
 end
 
 function RefreshAccount (account, since)
@@ -179,6 +212,8 @@ function RefreshAccount (account, since)
         getTrans = allAssetWallets.data.attributes.index.index.attributes.wallets
       elseif account.subAccount == "commodity.metal" then
         getTrans = allAssetWallets.data.attributes.commodity.metal.attributes.wallets
+      elseif account.subAccount == "security.stock" then
+        getTrans = allAssetWallets.data.attributes.security.stock.attributes.wallets
       elseif account.subAccount == "fiat" then
         getTrans = allFiatWallets.data
       else
@@ -202,7 +237,8 @@ function transactionForCryptTransaction(transaction, currency, type)
     local currPrice = 0
     local currQuant = tonumber(transaction.attributes.balance) 
     local currAmount = 0 
-
+    local isinString = ""
+    local wpName = transaction.attributes.name
     local calcCurrency = currency
     
     if type == "fiat" then
@@ -214,6 +250,13 @@ function transactionForCryptTransaction(transaction, currency, type)
       symbol = transaction.attributes.cryptocoin_symbol
       currAmount = currQuant
       currQuant = nil
+    elseif type == "security.stock" then  
+      symbol = transaction.attributes.cryptocoin_symbol
+      currPrice = tonumber(queryStockMasterdata(symbol, "avg_price"))
+      isinString = queryStockMasterdata(symbol, "isin")
+      wpName = wpName .. " - " .. queryStockMasterdata(symbol, "name")
+      currAmount = currPrice * currQuant
+      calcCurrency = nil
     else
       symbol = transaction.attributes.cryptocoin_symbol
       currPrice = tonumber(queryPrice(symbol, currency))
@@ -223,8 +266,9 @@ function transactionForCryptTransaction(transaction, currency, type)
 
     t = {
       --String name: Bezeichnung des Wertpapiers
-      name = transaction.attributes.name,
+      name = wpName,
       --String isin: ISIN
+      isin = isinString,
       --String securityNumber: WKN
       securityNumber = symbol,
       --String market: Börse
@@ -278,6 +322,17 @@ end
 function queryPrice(symbol, currency)
   return priceTable[symbol][currency]
 end
+
+function queryStockMasterdata(symbol, field)
+  for key, value in pairs(stockPrices) do
+    if value.attributes.symbol == symbol then
+      return value.attributes[field]
+    end
+  end
+
+  return 0
+end
+
 
 function httpBuildQuery(params)
     local str = ''

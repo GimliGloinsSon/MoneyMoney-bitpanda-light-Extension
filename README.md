@@ -53,5 +53,19 @@ Usage
     * Cryptocoin wallets
     * Index wallets
     * Commodity (metal) wallets
+    * Stock wallets
 
 ![MoneyMoney screenshot with Bitpanda account selection](screens/Kontenauswahl.png)
+
+
+Version history
+---------------
+
+* 1.1:
+    * added Stock wallets
+
+* 1.01:
+    * performance improvement
+
+* 1.0:
+    * initial version
