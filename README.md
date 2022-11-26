@@ -54,12 +54,17 @@ Usage
     * Index wallets
     * Commodity (metal) wallets
     * Stock wallets
+    * ETF wallets
+    * ETC (Ressource) wallets
 
 ![MoneyMoney screenshot with Bitpanda account selection](screens/Kontenauswahl.png)
 
 
 Version history
 ---------------
+
+* 1.2:
+    * added ETF and ETC (Ressource) wallets
 
 * 1.1:
     * added Stock wallets
