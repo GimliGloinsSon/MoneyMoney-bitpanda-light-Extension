@@ -26,10 +26,10 @@
 -- SOFTWARE.
 
 
-WebBanking{version     = 1.1,
+WebBanking{version     = 1.2,
            url         = "https://api.bitpanda.com/v1/",
            services    = {"bitpanda-light"},
-           description = "Loads current Balances for FIATs, Krypto, Indizes, Stocks and Commodities from bitpanda"}
+           description = "Loads current Balances for FIATs, Krypto, Indizes, Stocks, ETFs, ETCs (Ressources) and Commodities from bitpanda"}
 
 local connection = Connection()
 local apiKey
@@ -128,6 +128,8 @@ function InitializeSession (protocol, bankCode, username, username2, password, u
     stocks = connection:request("GET", urlStock, nil, nil, nil)
     stockPriceTable = JSON(stocks):dictionary()
     stockPrices = stockPriceTable.data.attributes.stocks
+    etfPrices = stockPriceTable.data.attributes.etfs
+    etcPrices = stockPriceTable.data.attributes.etcs
 end
 
 function ListAccounts (knownAccounts)
@@ -194,6 +196,30 @@ function ListAccounts (knownAccounts)
         subAccount = "security.stock"
       })
 
+    -- ETF Wallets
+    table.insert(accounts,
+    {
+      name = "ETF Wallets",
+      owner = user,
+      accountNumber = "ETF Accounts",
+      currency = walletCurrency,
+      portfolio = true,
+      type = AccountTypePortfolio,
+      subAccount = "security.etf"
+    })
+
+     -- ETC Wallets (Ressources)
+     table.insert(accounts,
+     {
+       name = "Ressource Wallets",
+       owner = user,
+       accountNumber = "Ressource Accounts",
+       currency = walletCurrency,
+       portfolio = true,
+       type = AccountTypePortfolio,
+       subAccount = "security.etc"
+     })
+
       return accounts
 end
 
@@ -214,6 +240,10 @@ function RefreshAccount (account, since)
         getTrans = allAssetWallets.data.attributes.commodity.metal.attributes.wallets
       elseif account.subAccount == "security.stock" then
         getTrans = allAssetWallets.data.attributes.security.stock.attributes.wallets
+      elseif account.subAccount == "security.etf" then
+        getTrans = allAssetWallets.data.attributes.security.etf.attributes.wallets
+      elseif account.subAccount == "security.etc" then
+        getTrans = allAssetWallets.data.attributes.security.etc.attributes.wallets
       elseif account.subAccount == "fiat" then
         getTrans = allFiatWallets.data
       else
@@ -252,9 +282,23 @@ function transactionForCryptTransaction(transaction, currency, type)
       currQuant = nil
     elseif type == "security.stock" then
       symbol = transaction.attributes.cryptocoin_symbol
-      currPrice = tonumber(queryStockMasterdata(symbol, "avg_price"))
-      isinString = queryStockMasterdata(symbol, "isin")
-      wpName = wpName .. " - " .. queryStockMasterdata(symbol, "name")
+      currPrice = tonumber(queryStockMasterdata(symbol, "avg_price", stockPrices))
+      isinString = queryStockMasterdata(symbol, "isin", stockPrices)
+      wpName = wpName .. " - " .. queryStockMasterdata(symbol, "name", stockPrices)
+      currAmount = currPrice * currQuant
+      calcCurrency = nil
+    elseif type == "security.etf" then
+      symbol = transaction.attributes.cryptocoin_symbol
+      currPrice = tonumber(queryStockMasterdata(symbol, "avg_price", etfPrices))
+      isinString = queryStockMasterdata(symbol, "isin", etfPrices)
+      wpName = wpName .. " - " .. queryStockMasterdata(symbol, "name", etfPrices)
+      currAmount = currPrice * currQuant
+      calcCurrency = nil
+    elseif type == "security.etc" then
+      symbol = transaction.attributes.cryptocoin_symbol
+      currPrice = tonumber(queryStockMasterdata(symbol, "avg_price", etcPrices))
+      isinString = queryStockMasterdata(symbol, "isin", etcPrices)
+      wpName = wpName .. " - " .. queryStockMasterdata(symbol, "name", etcPrices)
       currAmount = currPrice * currQuant
       calcCurrency = nil
     else
@@ -323,8 +367,9 @@ function queryPrice(symbol, currency)
   return priceTable[symbol][currency]
 end
 
-function queryStockMasterdata(symbol, field)
-  for key, value in pairs(stockPrices) do
+function queryStockMasterdata(symbol, field, table)
+
+  for key, value in pairs(table) do
     if value.attributes.symbol == symbol then
       return value.attributes[field]
     end
@@ -343,4 +388,4 @@ function httpBuildQuery(params)
     return str
 end
 
--- SIGNATURE: MCwCFH4D4TVA1/HAwjcdtbH2P+gohMewAhQ2oSvyE93XUiXRpKREzshwiYhO3A==
+-- SIGNATURE: MC0CFQCYkHZu+2ntVYOmrwBwV8d7LTKfRgIUeXM4vDxiNiJUtuMVCFJaLMi0CGw=
