@@ -63,6 +63,9 @@ Usage
 Version history
 ---------------
 
+* 1.21:
+    * show wallets for staked cryptos
+
 * 1.2:
     * added ETF and ETC (Ressource) wallets
 
