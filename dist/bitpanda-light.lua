@@ -250,7 +250,7 @@ function RefreshAccount (account, since)
         return
       end
       for index, cryptTransaction in pairs(getTrans) do
-        if tonumber(cryptTransaction.attributes.balance) > 0 then
+        if tonumber(cryptTransaction.attributes.balance) >= 0 then
           local transaction = transactionForCryptTransaction(cryptTransaction, account.currency, account.subAccount)
           t[#t + 1] = transaction
         end
@@ -388,4 +388,4 @@ function httpBuildQuery(params)
     return str
 end
 
--- SIGNATURE: MC0CFQCYkHZu+2ntVYOmrwBwV8d7LTKfRgIUeXM4vDxiNiJUtuMVCFJaLMi0CGw=
+-- SIGNATURE: MCwCFHQQNnUcWZebVWj1tKKIQlotcEtaAhRscJZwdKVeOL7FwGYJezry977zGg==
